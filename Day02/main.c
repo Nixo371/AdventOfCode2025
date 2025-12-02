@@ -19,6 +19,29 @@ size_t get_number_digit_count(int64_t number) {
 	return (digit_count);
 }
 
+int* get_factors(int number, int* factor_count) {
+	*factor_count = 1; // 1 and itself
+	size_t factor_size = 4;
+	
+	int* factors = (int *) malloc(factor_size * sizeof(int));
+	factors[0] = 1;
+	for (int i = 2; i <= number / 2; i++) {
+		if (number % i == 0) {
+			if (*factor_count >= factor_size) {
+				factor_size *= 2;
+				factors = realloc(factors, factor_size);
+			}
+			factors[*factor_count] = i;
+			*factor_count += 1;
+		}
+	}
+	factors = realloc(factors, *factor_count + 1);
+	factors[*factor_count] = number;
+	*factor_count += 1;
+
+	return (factors);
+}
+
 int is_invalid_id(int64_t id) {
 	size_t digit_count = get_number_digit_count(id);
 
@@ -37,6 +60,43 @@ int is_invalid_id(int64_t id) {
 	if (id % modulo == 0) {
 		return (1);
 	}
+	return (0);
+}
+
+int is_invalid_id2(int64_t id) {
+	size_t digit_count = get_number_digit_count(id);
+	if (digit_count <= 1) {
+		return (0);
+	}
+	
+	// Check all factors and generate all possible modulos
+	// Ex: 565656
+	// Digit Count = 6
+	// Factors: 1, 2, 3, 6
+	// Modulos: 001001 (2), 010101 (3)
+
+	int factor_count;
+	int* factors = get_factors(digit_count, &factor_count);
+
+	// ignore last (id)
+	for (int i = 1; i < factor_count; i++) {
+		int factor = factors[i];
+		int64_t modulo = 1;
+		// multiply by 10 [number / factor] times; then add 1
+		// repeat [factor - 1] times
+		for (int repeats = 0; repeats < (factor - 1); repeats++) {
+			for (int spacing = 0; spacing < (digit_count / factor); spacing++) {
+				modulo *= 10;
+			}
+			modulo += 1;
+		}
+
+		// printf("[%ld]\tModulo for %d is %ld\n", id, factor, modulo);
+		if (id % modulo == 0) {
+			return (1);
+		}
+	}
+
 	return (0);
 }
 
@@ -142,14 +202,21 @@ int main(int argc, char *argv[]) {
 	range* ranges = parse_ranges(line, &range_count);
 
 	int64_t invalid_id_sum = 0;
+	int64_t invalid_id_sum2 = 0;
 	for (size_t i = 0; i < range_count; i++) {
-		for (int64_t id = ranges[i].start; id < ranges[i].end; id++) {
+		for (int64_t id = ranges[i].start; id <= ranges[i].end; id++) {
 			if (is_invalid_id(id)) {
 				// printf("Invalid ID: %ld\n", id);
 				invalid_id_sum += id;
+			}
+			if (is_invalid_id2(id)) {
+				// printf("Invalid ID: %ld\n", id);
+				// printf("%ld - Invalid\n", id);
+				invalid_id_sum2 += id;
 			}
 		}
 	}
 
 	printf("Invalid ID sum: %ld\n", invalid_id_sum);
+	printf("Invalid ID sum 2: %ld\n", invalid_id_sum2);
 }
