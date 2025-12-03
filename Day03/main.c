@@ -3,33 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int get_maximum_joltage(int* batteries, int battery_count) {
-	size_t max_single_joltage_index = -1;
-	int max_single_joltage = -1;
-	int max_joltage = -1;
-
-	// Find the largest number (except the last one)
-	// This gives us the 10s place for our maximum joltage
-	for (size_t i = 0; i < battery_count; i++) {
-		if (batteries[i] > max_single_joltage && i != battery_count - 1) {
-			max_single_joltage = batteries[i];
-			max_single_joltage_index = i;
-		}
-	}
-
-	max_joltage = max_single_joltage * 10;
-
-	int starting_joltage = max_joltage;
-	for (size_t i = max_single_joltage_index + 1; i < battery_count; i++) {
-		if (starting_joltage + batteries[i] > max_joltage) {
-			max_joltage = starting_joltage + batteries[i];
-		}
-	}
-
-	return (max_joltage);
-}
-
-int64_t get_maximum_joltage2(int* batteries, int battery_count, int digits) {
+int64_t get_maximum_joltage(int* batteries, int battery_count, int digits) {
 	int64_t max_joltage = 0;
 	size_t previous_battery = -1;
 
@@ -116,17 +90,21 @@ int main(int argc, char *argv[]) {
 	FILE* input = fopen(file_name, "r");
 
 	int64_t total_joltage = 0;
+	int64_t total_joltage2 = 0;
 	for (char* line = get_next_line(input); line != NULL; line = get_next_line(input)) {
 		int battery_count;
 		int* batteries = parse_batteries(line, &battery_count);
 
-		int64_t maximum_joltage = get_maximum_joltage2(batteries, battery_count, 12);
+		int64_t maximum_joltage = get_maximum_joltage(batteries, battery_count, 2);
+		int64_t maximum_joltage2 = get_maximum_joltage(batteries, battery_count, 12);
 
 		total_joltage += maximum_joltage;
+		total_joltage2 += maximum_joltage2;
 
 		free(batteries);
 		free(line);
 	}
 
-	printf("Total Joltage: %ld\n", total_joltage);
+	printf("Total Joltage Part 1: %ld\n", total_joltage);
+	printf("Total Joltage Part 2: %ld\n", total_joltage2);
 }
