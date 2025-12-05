@@ -3,6 +3,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef struct s_vec2 {
+	int x;
+	int y;
+} vec2;
+
 char* get_next_line(FILE* file) {
 	if (feof(file) != 0) {
 		return (NULL);
@@ -113,6 +118,19 @@ int** initialize_grid(FILE* file, int* rows, int* columns) {
 	return (grid);
 }
 
+void reset_grid(int** grid, int rows, int columns) {
+	for (int row = 0; row < rows; row++) {
+		for (int column = 0; column < columns; column++) {
+			if (grid[row][column] < 0) {
+				grid[row][column] = -9;
+			}
+			else {
+				grid[row][column] = 0;
+			}
+		}
+	}
+}
+
 void add_one(int** grid, int row, int column, int rows, int columns) {
 	if (row < 0 || column < 0 || row >= rows || column >= columns) {
 		return;
@@ -132,6 +150,86 @@ void add_one_to_surrounding(int** grid, int row, int column, int rows, int colum
 	}
 }
 
+void remove_rolls(int** grid, vec2* rolls, int roll_count) {
+	int row;
+	int column;
+
+	for (int i = 0; i < roll_count; i++) {
+		row = rolls[i].y;
+		column = rolls[i].x;
+
+		// printf("Removing roll at (%d, %d)\n", row, column);
+		grid[row][column] = -9;
+	}
+}
+
+int get_accessible_rolls_count(int** grid, int rows, int columns) {
+	int accessible_rolls = 0;
+
+	for (int row = 0; row < rows; row++) {
+		for (int column = 0; column < columns; column++) {
+			if (grid[row][column] >= 0) {
+				add_one_to_surrounding(grid, row, column, rows, columns);
+			}
+		}
+	}
+
+	for (int row = 0; row < rows; row++) {
+		for (int column = 0; column < columns; column++) {
+			if (grid[row][column] >= 0 && grid[row][column] < 4) {
+				accessible_rolls += 1;
+			}
+		}
+	}
+
+	reset_grid(grid, rows, columns);
+
+	return (accessible_rolls);
+}
+
+vec2* get_accessible_rolls(int** grid, int rows, int columns, int* accessible_rolls_count) {
+	vec2* accessible_rolls;
+	*accessible_rolls_count = 0;
+
+	for (int row = 0; row < rows; row++) {
+		for (int column = 0; column < columns; column++) {
+			if (grid[row][column] >= 0) {
+				add_one_to_surrounding(grid, row, column, rows, columns);
+			}
+		}
+	}
+
+	for (int row = 0; row < rows; row++) {
+		for (int column = 0; column < columns; column++) {
+			if (grid[row][column] >= 0 && grid[row][column] < 4) {
+				*accessible_rolls_count += 1;
+			}
+		}
+	}
+
+	if (*accessible_rolls_count == 0) {
+		return (NULL);
+	}
+
+	accessible_rolls = (vec2 *) malloc(*accessible_rolls_count * sizeof(vec2));
+
+	int rolls = 0;
+	for (int row = 0; row < rows; row++) {
+		for (int column = 0; column < columns; column++) {
+			if (grid[row][column] >= 0 && grid[row][column] < 4) {
+				accessible_rolls[rolls].x = column;
+				accessible_rolls[rolls].y = row;
+
+				rolls += 1;
+			}
+		}
+	}
+
+	reset_grid(grid, rows, columns);
+
+	return (accessible_rolls);
+}
+
 int main(int argc, char *argv[]) {
 	char* file_name = "input";
 	if (argc > 1) {
@@ -143,23 +241,22 @@ int main(int argc, char *argv[]) {
 	int columns;
 	int** grid = initialize_grid(input, &rows, &columns);
 
-	for (int row = 0; row < rows; row++) {
-		for (int column = 0; column < columns; column++) {
-			if (grid[row][column] >= 0) {
-				add_one_to_surrounding(grid, row, column, rows, columns);
-			}
-		}
+	int total_accessible_rolls = 0;
+	int accessible_rolls_count = get_accessible_rolls_count(grid, rows, columns);
+	printf("Accessible Rolls of Paper Part 1: %d\n", accessible_rolls_count);
+
+	vec2* accessible_rolls = get_accessible_rolls(grid, rows, columns, &accessible_rolls_count);
+	while (accessible_rolls != NULL) {
+		total_accessible_rolls += accessible_rolls_count;
+
+		remove_rolls(grid, accessible_rolls, accessible_rolls_count);
+		// printf("%d rolls removed\n", accessible_rolls_count);
+
+		free(accessible_rolls);
+
+		accessible_rolls = get_accessible_rolls(grid, rows, columns, &accessible_rolls_count);
 	}
 
-	int accessible_rolls = 0;
-	for (int row = 0; row < rows; row++) {
-		for (int column = 0; column < columns; column++) {
-			if (grid[row][column] >= 0 && grid[row][column] < 4) {
-				accessible_rolls += 1;
-			}
-		}
-	}
-
-	printf("Accessible Rolls of Paper: %d\n", accessible_rolls);
+	printf("Accessible Rolls of Paper Part 2: %d\n", total_accessible_rolls);
 }
 
