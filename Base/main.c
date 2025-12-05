@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "utils.h"
+#include "../common/utils.h"
 
 #define DEBUG 0
 
@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
 	}
 	FILE* input = fopen(file_name, "r");
 	if (input == NULL) {
-		perror("open");
+		perror("fopen");
 		exit(EXIT_FAILURE);
 	}
 

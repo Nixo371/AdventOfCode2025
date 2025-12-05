@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../common/utils.h"
+
 typedef struct s_range {
 	int64_t start;
 	int64_t end;
@@ -19,7 +21,7 @@ size_t get_number_digit_count(int64_t number) {
 	return (digit_count);
 }
 
-int* get_factors(int number, int* factor_count) {
+int* get_factors(int number, size_t* factor_count) {
 	*factor_count = 1; // 1 and itself
 	size_t factor_size = 4;
 	
@@ -75,17 +77,17 @@ int is_invalid_id2(int64_t id) {
 	// Factors: 1, 2, 3, 6
 	// Modulos: 001001 (2), 010101 (3)
 
-	int factor_count;
+	size_t factor_count;
 	int* factors = get_factors(digit_count, &factor_count);
 
 	// ignore last (id)
-	for (int i = 1; i < factor_count; i++) {
+	for (size_t i = 1; i < factor_count; i++) {
 		int factor = factors[i];
 		int64_t modulo = 1;
 		// multiply by 10 [number / factor] times; then add 1
 		// repeat [factor - 1] times
 		for (int repeats = 0; repeats < (factor - 1); repeats++) {
-			for (int spacing = 0; spacing < (digit_count / factor); spacing++) {
+			for (size_t spacing = 0; spacing < (digit_count / factor); spacing++) {
 				modulo *= 10;
 			}
 			modulo += 1;
@@ -100,7 +102,7 @@ int is_invalid_id2(int64_t id) {
 	return (0);
 }
 
-range* parse_ranges(char* line, int* total_range_count) {
+range* parse_ranges(char* line, size_t* total_range_count) {
 	*total_range_count = 0;
 	size_t range_count = 0;
 	for (size_t i = 0; line[i] != '\0'; i++) {
@@ -148,57 +150,20 @@ range* parse_ranges(char* line, int* total_range_count) {
 	return (ranges);
 }
 
-char* get_next_line(FILE* file) {
-	if (feof(file) != 0) {
-		return (NULL);
-	}
-
-	int line_size = 0;
-	int max_line_size = 64;
-	
-	char* line = (char *) malloc(max_line_size * sizeof(char));
-	while (fread(line + line_size, 1, sizeof(char), file)) {
-		line_size += 1;
-		if (line_size >= max_line_size) {
-			max_line_size *= 2;
-			line = realloc(line, max_line_size);
-		}
-
-		if (line[line_size - 1] == '\n') {
-			line_size -= 1;
-			break;
-		}
-	}
-
-	if (feof(file) != 0) {
-		free(line);
-
-		return (NULL);
-	}
-
-	if (ferror(file) != 0) {
-		free(line);
-
-		perror("fread");
-		exit(EXIT_FAILURE);
-	}
-
-	line = realloc(line, line_size + 1);
-	line[line_size] = '\0';
-
-	return (line);
-}
-
 int main(int argc, char *argv[]) {
 	char* file_name = "input";
 	if (argc > 1) {
 		file_name = argv[1];
 	}
 	FILE* input = fopen(file_name, "r");
+	if (input == NULL) {
+		perror("fopen");
+		exit(EXIT_FAILURE);
+	}
 
 	char* line = get_next_line(input);
 
-	int range_count;
+	size_t range_count;
 	range* ranges = parse_ranges(line, &range_count);
 
 	int64_t invalid_id_sum = 0;

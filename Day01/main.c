@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../common/utils.h"
+
 int normalize(int number) {
 	while (number < 0) {
 		number += 100;
@@ -68,21 +70,26 @@ int main(int argc, char *argv[]) {
 		file_name = argv[1];
 	}
 	FILE* input = fopen(file_name, "r");
+	if (input == NULL) {
+		perror("fopen");
+		exit(EXIT_FAILURE);
+	}
 
 	int number = 50; // Where the dial starts
 	int times_landed = 0;
 	int times_passed = 0;
 
-	char buffer[10]; // Max 3 digit number
-	while (fgets(buffer, 10, input)) {
-		int clicks = atoi(buffer + 1);
+	for (char* line = get_next_line(input); line != NULL; line = get_next_line(input)) {
+		int clicks = atoi(line + 1);
 
-		if (buffer[0] == 'L') {
+		if (line[0] == 'L') {
 			number = turn(number, -clicks, &times_landed, &times_passed);
 		}
-		else if (buffer[0] == 'R') {
+		else if (line[0] == 'R') {
 			number = turn(number, clicks, &times_landed, &times_passed);
 		}
+
+		free(line);
 	}
 
 	printf("The Part 1 password is %d\n", times_landed);

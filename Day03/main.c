@@ -3,13 +3,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "../common/utils.h"
+
 int64_t get_maximum_joltage(int* batteries, int battery_count, int digits) {
 	int64_t max_joltage = 0;
 	size_t previous_battery = -1;
 
 	for (int digit = 0; digit < digits; digit++) {
 		int max_single_joltage = -1;
-		int last_possible_digit = battery_count - (digits - digit) + 1;
+		size_t last_possible_digit = battery_count - (digits - digit) + 1;
 		for (size_t i = previous_battery + 1; i < last_possible_digit; i++) {
 			if (batteries[i] > max_single_joltage) {
 				max_single_joltage = batteries[i];
@@ -41,53 +43,16 @@ int* parse_batteries(char* line, int* battery_count) {
 	return (batteries);
 }
 
-char* get_next_line(FILE* file) {
-	if (feof(file) != 0) {
-		return (NULL);
-	}
-
-	int line_size = 0;
-	int max_line_size = 64;
-	
-	char* line = (char *) malloc(max_line_size * sizeof(char));
-	while (fread(line + line_size, 1, sizeof(char), file)) {
-		line_size += 1;
-		if (line_size >= max_line_size) {
-			max_line_size *= 2;
-			line = realloc(line, max_line_size);
-		}
-
-		if (line[line_size - 1] == '\n') {
-			line_size -= 1;
-			break;
-		}
-	}
-
-	if (feof(file) != 0) {
-		free(line);
-
-		return (NULL);
-	}
-
-	if (ferror(file) != 0) {
-		free(line);
-
-		perror("fread");
-		exit(EXIT_FAILURE);
-	}
-
-	line = realloc(line, line_size + 1);
-	line[line_size] = '\0';
-
-	return (line);
-}
-
 int main(int argc, char *argv[]) {
 	char* file_name = "input";
 	if (argc > 1) {
 		file_name = argv[1];
 	}
 	FILE* input = fopen(file_name, "r");
+	if (input == NULL) {
+		perror("fopen");
+		exit(EXIT_FAILURE);
+	}
 
 	int64_t total_joltage = 0;
 	int64_t total_joltage2 = 0;
