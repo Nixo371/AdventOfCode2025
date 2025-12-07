@@ -60,6 +60,108 @@ int64_t evaluate_equation(equation eq) {
 	return (value);
 }
 
+void print_grid(char** grid, size_t rows) {
+	for (size_t i = 0; i < rows; i++) {
+		for (size_t j = 0; grid[i][j] != '\0'; j++) {
+			printf("%c", grid[i][j]);
+		}
+		printf("\n");
+	}
+}
+
+// start_column and end_column are inclusive
+int64_t evaluate_equation2(char** grid, size_t start_column, size_t end_column, size_t rows) {
+	if (start_column == 0 && end_column == 0) {
+		return (0);
+	}
+
+	if (DEBUG) {
+		printf("Evaluation equation between %ld and %ld\n", start_column, end_column);
+	}
+
+	int64_t value;
+	if (grid[rows - 1][start_column] == '+') {
+		if (DEBUG) {
+			// printf("Addition\n");
+		}
+		value = 0;
+		for (int c = end_column; c >= (int)start_column; c--) {
+			int num = 0;
+			if (DEBUG) {
+				// printf("ADD: ");
+			}
+			for (size_t r = 0; r < rows - 1; r++) {
+				if (DEBUG) {
+					printf("grid[%ld][%d] = '%c'\n", r, c, grid[r][c]);
+				}
+				if (grid[r][c] == ' ') {
+					continue;
+				}
+				num = (num * 10) + (grid[r][c] - '0');
+			}
+			value += num;
+			if (DEBUG) {
+				// printf("\n");
+			}
+		}
+	}
+	else if (grid[rows - 1][start_column] == '*') {
+		if (DEBUG) {
+			// printf("Multiplication\n");
+		}
+		value = 1;
+		for (int c = end_column; c >= (int)start_column; c--) {
+			int num = 0;
+			if (DEBUG) {
+				// printf("MUL: ");
+			}
+			for (size_t r = 0; r < rows - 1; r++) {
+				if (DEBUG) {
+					printf("grid[%ld][%d] = '%c'\n", r, c, grid[r][c]);
+				}
+				if (grid[r][c] == ' ') {
+					continue;
+				}
+				num = (num * 10) + (grid[r][c] - '0');
+			}
+			value *= num;
+			if (DEBUG) {
+				// printf("\n");
+			}
+		}
+	}
+
+	return (value);
+}
+
+int64_t evaluate_equations2(char** grid, size_t rows) {
+	size_t columns = 0;
+	while (grid[0][columns] != '\0') {
+		columns += 1;
+	}
+	if (DEBUG) {
+		printf("%ld columns\n", columns);
+	}
+
+	int64_t total = 0;
+
+	size_t start_c = 0;
+	for (size_t i = 0; i < columns; i++) {
+		if (grid[rows - 1][i] == '+' || grid[rows - 1][i] == '*') {
+			if (DEBUG) {
+				printf("Next equation between columns %ld and %ld\n", start_c, i - 2);
+			}
+			if (i >= 2) {
+				total += evaluate_equation2(grid, start_c, i - 2, rows);
+			}
+			start_c = i;
+		}
+	}
+	total += evaluate_equation2(grid, start_c, columns - 1, rows);
+
+	return (total);
+}
+
 void init_equations(equations* equations) {
 	equations->equation_size = 16;
 	equations->equation_count = 0;
@@ -201,11 +303,20 @@ int main(int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
+	size_t grid_rows = 8;
+	size_t row = 0;
+	char** grid = (char **) malloc(grid_rows * sizeof(char *));
+
 	equations equations = {0};
 	for (char* line = get_next_line(input); line != NULL; line = get_next_line(input)) {
 		parse_line(&equations, line);
 
-		free(line);
+		if (row >= grid_rows) {
+			grid_rows *= 2;
+			grid = realloc(grid, grid_rows * sizeof(char *));
+		}
+		grid[row] = line;
+		row += 1;
 	}
 
 	if (DEBUG) {
@@ -218,6 +329,12 @@ int main(int argc, char *argv[]) {
 		grand_total += value;
 	}
 
+	if (DEBUG) {
+		print_grid(grid, row);
+	}
+	int64_t grand_total2 = evaluate_equations2(grid, row);
+
 	printf("Grand Total (Part 1): %ld\n", grand_total);
+	printf("Grand Total (Part 2): %ld\n", grand_total2);
 }
 
